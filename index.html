@@ -5,9 +5,134 @@
     <meta name="viewport"
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Document</title>
+    <title>TnB Calculator</title>
+
+    <!-- Bootstrap v5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
+
+    <!-- JQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo" crossorigin="anonymous"></script>
 </head>
 <body>
-    <h1>TNB Calculator</h1>
+<div class="container">
+    <div class="card">
+        <div class="card-header text-center">
+            TnB Calculator
+        </div>
+        <div class="card-body">
+            <div class="col-12">
+                <div class="row">
+                    <div class="col-12">
+                        Tariff Block
+                        <ul class="list-group">
+                            <li class="list-group-item">1 - 200 kWh - RM0.218</li>
+                            <li class="list-group-item">201 - 300 kWh - RM0.334</li>
+                            <li class="list-group-item">301 - 600 kWh - RM0.516</li>
+                            <li class="list-group-item">601 - 900 kWh - RM0.546</li>
+                            <li class="list-group-item">> 900 kWh - RM0.571</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-12 mb-3">
+                        <label for="overall-usage" class="form-label">Total kWh Used</label>
+                        <input type="number" class="form-control" name="overall-usage" id="overall-usage">
+                    </div>
+
+                    <div class="col-12 mb-3">
+                        <label for="room-1" class="form-label">Room 1 Usage</label>
+                        <input type="number" class="form-control" name="room-1" id="room-1">
+                        <span id="room-1-payable" class="form-text">Price to Pay: RM0.00</span>
+                    </div>
+
+                    <div class="col-12 mb-3">
+                        <label for="room-2" class="form-label">Room 2 Usage</label>
+                        <input type="number" class="form-control" name="room-2" id="room-2">
+                        <span id="room-2-payable" class="form-text">Price to Pay: RM0.00</span>
+                    </div>
+
+                    <div class="col-12 mb-3">
+                        <label for="room-3" class="form-label">Room 3 Usage</label>
+                        <input type="number" class="form-control" name="room-3" id="room-3">
+                        <span id="room-3-payable" class="form-text">Price to Pay: RM0.00</span>
+                    </div>
+
+                    <div class="col-12 mb-3">
+                        <label for="room-4" class="form-label">Room 4 Usage</label>
+                        <input type="number" class="form-control" name="room-4" id="room-4">
+                        <span id="room-4-payable" class="form-text">Price to Pay: RM0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        $('#overall-usage, #room-1, #room-2, #room-3, #room-4').on('input', function() {
+            calculate();
+        });
+    });
+
+    function calculate() {
+        // Parse input values, default to 0 if invalid
+        let totalUsage = parseFloat($('#overall-usage').val()) || 0;
+        let room1 = parseFloat($('#room-1').val()) || 0;
+        let room2 = parseFloat($('#room-2').val()) || 0;
+        let room3 = parseFloat($('#room-3').val()) || 0;
+        let room4 = parseFloat($('#room-4').val()) || 0;
+
+        // Calculate common area usage, ensuring it's not negative
+        let commonAreaUsage = totalUsage - (room1 + room2 + room3 + room4);
+        commonAreaUsage = commonAreaUsage < 0 ? 0 : commonAreaUsage;
+
+        // Calculate fees for each room and common area
+        let commonAreaFee = calculateBasedOnTier(commonAreaUsage);
+        let dividedCommonAreaFee = commonAreaFee / 4;
+        let room1Fee = calculateBasedOnTier(room1) + dividedCommonAreaFee;
+        let room2Fee = calculateBasedOnTier(room2) + dividedCommonAreaFee;
+        let room3Fee = calculateBasedOnTier(room3) + dividedCommonAreaFee;
+        let room4Fee = calculateBasedOnTier(room4) + dividedCommonAreaFee;
+
+        // Update the displayed prices
+        $('#room-1-payable').text('Price to Pay: RM' + room1Fee.toFixed(2));
+        $('#room-2-payable').text('Price to Pay: RM' + room2Fee.toFixed(2));
+        $('#room-3-payable').text('Price to Pay: RM' + room3Fee.toFixed(2));
+        $('#room-4-payable').text('Price to Pay: RM' + room4Fee.toFixed(2));
+    }
+
+    function calculateBasedOnTier(usage) {
+        if (usage <= 0) return 0;
+
+        const tier1 = 200, tier2 = 300, tier3 = 600, tier4 = 900;
+        const tier1Price = 0.218, tier2Price = 0.334, tier3Price = 0.516, tier4Price = 0.546, tier5Price = 0.571;
+        let cost = 0;
+
+        // Calculate from highest tier down to the lowest
+        if (usage > tier4) {
+            cost += (usage - tier4) * tier5Price;
+            usage = tier4;
+        }
+        if (usage > tier3) {
+            cost += (usage - tier3) * tier4Price;
+            usage = tier3;
+        }
+        if (usage > tier2) {
+            cost += (usage - tier2) * tier3Price;
+            usage = tier2;
+        }
+        if (usage > tier1) {
+            cost += (usage - tier1) * tier2Price;
+            usage = tier1;
+        }
+        cost += usage * tier1Price;
+
+        return cost;
+    }
+</script>
 </body>
 </html>
